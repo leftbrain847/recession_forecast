@@ -62,6 +62,7 @@ a{color:var(--spark)}
 <footer>Data: Federal Reserve Economic Data (FRED), Federal Reserve Bank of St. Louis; Board of Governors of the Federal Reserve System (excess bond premium, SLOOS, Treasury yields); Federal Reserve Banks of Philadelphia, New York and Dallas; U.S. Census Bureau (building permits); NBER recession dates via FRED. Not investment advice. Rebuilt nightly.</footer>
 </main>
 <script>
+const esc=v=>String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"})[c]);
 const fmt=(v,d=2)=>v==null?"–":(+v).toFixed(d);
 const thrText=t=>t?`${t.op} ${t.value}`:"";
 function spark(c,recs){
@@ -79,15 +80,15 @@ function spark(c,recs){
   return `<svg class="spark" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" role="img" aria-label="${c.label} history ${s[0][0]} to ${ms[ms.length-1]}">${shade}${th}<path d="${d}" fill="none" stroke="var(--spark)" stroke-width="1.3" vector-effect="non-scaling-stroke"/></svg><div class="meta">${s[0][0].slice(0,4)}–${ms[ms.length-1].slice(0,4)} · dashed = threshold</div>`;
 }
 function card(c,recs){
-  let val=`${fmt(c.value)} <span class="meta">${c.units}</span>`,rule=`lit when ${thrText(c.threshold)}`;
+  let val=`${fmt(c.value)} <span class="meta">${esc(c.units)}</span>`,rule=`lit when ${thrText(c.threshold)}`;
   if(c.component_values){
-    val=c.components_cfg.map(k=>`${k.label}: <strong>${fmt(c.component_values[k.source].value)}</strong> <span class="meta">(${k.op} ${k.value}, ${c.component_values[k.source].month})</span>`).join("<br>");
+    val=c.components_cfg.map(k=>`${esc(k.label)}: <strong>${fmt(c.component_values[k.source].value)}</strong> <span class="meta">(${k.op} ${k.value}, ${c.component_values[k.source].month})</span>`).join("<br>");
     rule=`lit when ${c.combine==="all"?"all":"any"} component crosses`;
   }
   const flag=c.uninverted_after_inversion?`<div class="flag">⚠ Un-inverted after an inversion in the past 24 months</div>`:"";
-  return `<div class="card ${c.lit?"lit":""}"><div class="top"><span class="name">${c.label}</span><span class="pill ${c.lit?"on":"off"}">${c.lit?"LIT":"not lit"}</span></div>
+  return `<div class="card ${c.lit?"lit":""}"><div class="top"><span class="name">${esc(c.label)}</span><span class="pill ${c.lit?"on":"off"}">${c.lit?"LIT":"not lit"}</span></div>
   <div class="val" style="${c.component_values?"font-size:.95rem;font-weight:400":""}">${val}</div>
-  <div class="meta">${rule} for ≥${c.persistence_months} mo · condition met ${c.months_persisted} mo running · ${c.as_of_month}</div>${flag}${spark(c,recs)}</div>`;
+  <div class="meta">${rule} for ≥${c.persistence_months} mo · condition met ${c.months_persisted} mo running · ${esc(c.as_of_month)}</div>${flag}${spark(c,recs)}</div>`;
 }
 function render(d){
   document.getElementById("gen").textContent=`Built ${d.generated_at.replace("T"," ").slice(0,16)} UTC from FRED and Federal Reserve data`;
@@ -95,10 +96,10 @@ function render(d){
   const S=Object.values(d.signals);
   document.getElementById("prongs").innerHTML=S.filter(c=>c.role==="prong").map(c=>card(c,d.recessions)).join("");
   document.getElementById("watch").innerHTML=S.filter(c=>c.role==="watch").map(c=>card(c,d.recessions)).join("");
-  const rows=d.backtest.map(r=>`<tr class="${r.role==="combo"?"combo":""}"><td>${r.label}</td><td>${r.hits}</td><td>${r.false_positives}</td><td>${r.misses}</td><td>${r.median_lead_months??"–"}</td><td>${r.scored_recessions.length?r.scored_recessions[0].slice(0,4)+"–":"–"}</td></tr>`).join("");
+  const rows=d.backtest.map(r=>`<tr class="${r.role==="combo"?"combo":""}"><td>${esc(r.label)}</td><td>${r.hits}</td><td>${r.false_positives}</td><td>${r.misses}</td><td>${r.median_lead_months??"–"}</td><td>${r.scored_recessions.length?r.scored_recessions[0].slice(0,4)+"–":"–"}</td></tr>`).join("");
   document.getElementById("bt").innerHTML=`<thead><tr><th>Signal</th><th>Hits</th><th>False +</th><th>Misses</th><th>Median lead (mo)</th><th>Scored from</th></tr></thead><tbody>${rows}</tbody>`;
-  document.getElementById("btnote").textContent=`Hit = signal lit at any point in the ${d.backtest_window_months} months up to a recession start. Lead = months from first lit month in that window to the start. False positive = a new lit episode with no recession start within ${d.backtest_window_months} months. Each signal is scored only on recessions its own history covers; "≥N prongs" uses months where all four prongs have data.`;
-  document.getElementById("src").innerHTML=Object.entries(d.sources).map(([k,v])=>`<li><strong>${k}</strong> — latest ${v.last_observation} (from ${v.first_observation}) · ${v.attribution}</li>`).join("");
+  document.getElementById("btnote").textContent=`Hit = signal lit at some point in the ${d.backtest_window_months} months before a recession start. Lead = months from the first lit month in that window to the start. False positive = a new lit episode with no recession start within ${d.backtest_window_months} months. Each signal is scored only on recessions its own history covers; "≥N prongs" uses months where all four prongs have data.`;
+  document.getElementById("src").innerHTML=Object.entries(d.sources).map(([k,v])=>`<li><strong>${esc(k)}</strong> — latest ${esc(v.last_observation)} (from ${esc(v.first_observation)}) · ${esc(v.attribution)}</li>`).join("");
 }
 if(window.RF_DATA)render(window.RF_DATA);
 else fetch("data/signals.json").then(r=>r.json()).then(render).catch(e=>{document.getElementById("gen").textContent="Could not load data: "+e});

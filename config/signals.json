@@ -52,6 +52,6 @@
       "threshold": {"op": "<=", "value": -20}, "persistence_months": 1, "units": "%"
     }
   },
-  "backtest": {"window_months": 18, "recession_source": "USREC", "n_of_prongs": [1, 2, 3, 4]},
+  "backtest": {"window_months": 18, "include_start_month": false, "recession_source": "USREC", "n_of_prongs": [1, 2, 3, 4]},
   "output": {"path": "docs/data/signals.json", "chart_start": "1973-01"}
 }

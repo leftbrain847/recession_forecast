@@ -101,6 +101,14 @@ def test_backtest_hits_misses_false_positives_and_lead():
     assert (s["hits"], s["misses"], s["median_lead_months"]) == (1, 0, 12)
     assert s["false_positives"] == 1
     assert backtest.score({m: False for m in ms}, usrec, 18)["misses"] == 1
+    only_start = {m: m == "2002-07" for m in ms}
+    assert backtest.score(only_start, usrec, 18)["hits"] == 0
+    assert backtest.score(only_start, usrec, 18, include_start=True)["hits"] == 1
+
+
+def test_bad_dates_rejected():
+    with pytest.raises(ValueError, match="bad date"):
+        parse_csv("date,ebp\n<img src=x>,1\n", "date", "ebp")
 
 
 def test_build_end_to_end_from_fixtures(monkeypatch):

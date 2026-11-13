@@ -14,8 +14,8 @@ def onsets(lit):
     return [m for i, m in enumerate(ms) if lit[m] and (i == 0 or not lit[ms[i - 1]])]
 
 
-def score(lit, usrec, window):
-    """Hit: lit at some month in [start - window, start]. Lead = start - first lit month in that window.
+def score(lit, usrec, window, include_start=False):
+    """Hit: lit at some month in [start - window, start - 1] (or through start if include_start). Lead = start - first lit month in that window.
     False positive: an onset not followed by a recession start within `window` months and not inside a recession.
     Only recessions whose window lies inside the signal's history are scored."""
     if not lit:
@@ -24,7 +24,7 @@ def score(lit, usrec, window):
     starts = [s for s in recession_starts(usrec) if month_add(s, -window) >= first and s <= last]
     hits, misses, leads = 0, 0, []
     for s in starts:
-        win = [month_add(s, -k) for k in range(window, -1, -1)]
+        win = [month_add(s, -k) for k in range(window, -1 if include_start else 0, -1)]
         lit_months = [m for m in win if lit.get(m)]
         if lit_months:
             hits += 1
@@ -51,10 +51,11 @@ def _diff(a, b):
 
 def run(signals, counts, usrec, cfg):
     w = cfg["backtest"]["window_months"]
+    inc = cfg["backtest"].get("include_start_month", False)
     rows = []
     for sid, r in signals.items():
-        rows.append({"id": sid, "label": cfg["signals"][sid]["label"], "role": cfg["signals"][sid]["role"], **score(r["lit"], usrec, w)})
+        rows.append({"id": sid, "label": cfg["signals"][sid]["label"], "role": cfg["signals"][sid]["role"], **score(r["lit"], usrec, w, inc)})
     for n in cfg["backtest"]["n_of_prongs"]:
         lit = {m: c >= n for m, c in counts.items()}
-        rows.append({"id": f"n_of_prongs_{n}", "label": f"≥{n} prongs lit", "role": "combo", **score(lit, usrec, w)})
+        rows.append({"id": f"n_of_prongs_{n}", "label": f"≥{n} prongs lit", "role": "combo", **score(lit, usrec, w, inc)})
     return rows

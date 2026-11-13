@@ -4,6 +4,7 @@ import csv
 import io
 import json
 import os
+import re
 import urllib.parse
 import urllib.request
 
@@ -12,7 +13,7 @@ def http_get(url, timeout):
     req = urllib.request.Request(url, headers={"User-Agent": "recession_forecast/0.1"})
     with urllib.request.urlopen(req, timeout=timeout) as r:
         if r.status != 200:
-            raise RuntimeError(f"HTTP {r.status} for {url}")
+            raise RuntimeError(f"HTTP {r.status} for {url.split('?')[0]}")  # never echo the api_key query
         return r.read().decode("utf-8-sig")
 
 
@@ -21,6 +22,15 @@ def parse_value(v):
     if v in ("", "."):
         return None
     return float(v)
+
+
+DATE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
+
+
+def check_date(d):
+    if not DATE.match(d):
+        raise ValueError(f"bad date {d!r}")
+    return d
 
 
 def parse_csv(text, date_col, value_col, expected_columns=None):
@@ -34,7 +44,7 @@ def parse_csv(text, date_col, value_col, expected_columns=None):
     for row in reader:
         val = parse_value(row[value_col])
         if val is not None:
-            out.append((row[date_col][:10], val))
+            out.append((check_date(row[date_col][:10]), val))
     return out
 
 
@@ -46,7 +56,7 @@ def parse_fred_json(text, series_id):
     for o in data["observations"]:
         val = parse_value(o.get("value"))
         if val is not None:
-            out.append((o["date"], val))
+            out.append((check_date(o["date"]), val))
     return out
 
 
