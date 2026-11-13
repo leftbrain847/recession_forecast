@@ -25,6 +25,7 @@ def build(cfg, raw, now=None):
         last = max(r["lit"])
         card = {
             "id": sid, "label": sc["label"], "role": sc["role"], "units": sc.get("units", ""),
+            "short_label": sc.get("short_label", sc["label"]), "plain": sc.get("plain", ""), "trigger_text": sc.get("trigger_text", ""),
             "threshold": sc.get("threshold"), "components_cfg": sc.get("components"), "combine": sc.get("combine"),
             "persistence_months": sc["persistence_months"],
             "as_of_month": last, "lit": r["lit"][last], "value": r2(r["values"].get(last)),

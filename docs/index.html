@@ -4,147 +4,173 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Recession Signal Tracker</title>
-<meta name="description" content="Four-prong recession signal tracker with an NBER backtest, rebuilt nightly from FRED and Federal Reserve data.">
+<meta name="description" content="Staged recession-risk tracker with every past occurrence, rebuilt nightly from FRED and Federal Reserve data.">
 <style>
-:root{--bg:#f7f7f5;--card:#fff;--ink:#1b1d21;--mute:#5d636e;--line:#e3e3df;--lit:#c2410c;--lit-bg:#fff1e8;--ok:#15803d;--ok-bg:#ecfdf3;--watch:#a16207;--spark:#2f5d9a;--rec:rgba(120,120,120,.18);--thr:#9aa0a8}
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#121316;--card:#1b1d22;--ink:#ecedef;--mute:#9aa1ac;--line:#2c2f36;--lit:#fb923c;--lit-bg:#2b1a10;--ok:#4ade80;--ok-bg:#10241a;--watch:#facc15;--spark:#7fa8e0;--rec:rgba(200,200,200,.12);--thr:#5d636e}}
-:root[data-theme="dark"]{--bg:#121316;--card:#1b1d22;--ink:#ecedef;--mute:#9aa1ac;--line:#2c2f36;--lit:#fb923c;--lit-bg:#2b1a10;--ok:#4ade80;--ok-bg:#10241a;--watch:#facc15;--spark:#7fa8e0;--rec:rgba(200,200,200,.12);--thr:#5d636e}
+:root{--bg:#f6f6f3;--card:#fff;--ink:#17191d;--mute:#5d636e;--line:#e2e2dd;--spark:#2f5d9a;--rec:rgba(120,120,120,.18);--thr:#9aa0a8;
+  --s0:#15803d;--s0bg:#ecfdf3;--s1:#b45309;--s1bg:#fff7e6;--s2:#c2410c;--s2bg:#fff0e6;--s3:#b91c1c;--s3bg:#fdecec}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#111214;--card:#1b1d22;--ink:#eceef1;--mute:#9aa1ac;--line:#2c2f36;--spark:#7fa8e0;--rec:rgba(200,200,200,.13);--thr:#5d636e;
+  --s0:#4ade80;--s0bg:#10241a;--s1:#fbbf24;--s1bg:#2a210c;--s2:#fb923c;--s2bg:#2b1a10;--s3:#f87171;--s3bg:#2c1414}}
+:root[data-theme="dark"]{--bg:#111214;--card:#1b1d22;--ink:#eceef1;--mute:#9aa1ac;--line:#2c2f36;--spark:#7fa8e0;--rec:rgba(200,200,200,.13);--thr:#5d636e;
+  --s0:#4ade80;--s0bg:#10241a;--s1:#fbbf24;--s1bg:#2a210c;--s2:#fb923c;--s2bg:#2b1a10;--s3:#f87171;--s3bg:#2c1414}
 *{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
-main{max-width:960px;margin:0 auto;padding:20px 16px 48px}
-h1{font-size:1.4rem;margin:0 0 2px}
-h2{font-size:1.05rem;margin:28px 0 10px}
-.sub{color:var(--mute);margin:0 0 16px;font-size:.9rem}
-.hero{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px;display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}
-.hero .big{font-size:2.4rem;font-weight:700;font-variant-numeric:tabular-nums}
-.hero .lbl{color:var(--mute)}
-.grid{display:grid;gap:12px;grid-template-columns:1fr}
-@media(min-width:640px){.grid{grid-template-columns:1fr 1fr}}
-.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px}
-.card.lit{border-color:var(--lit);background:var(--lit-bg)}
-.top{display:flex;justify-content:space-between;align-items:center;gap:8px}
-.name{font-weight:600}
-.pill{font-size:.75rem;font-weight:700;padding:2px 8px;border-radius:999px;white-space:nowrap}
-.pill.on{color:var(--lit);border:1px solid var(--lit)}
-.pill.off{color:var(--ok);border:1px solid var(--ok)}
-.role{font-size:.72rem;color:var(--mute);text-transform:uppercase;letter-spacing:.04em}
-.val{font-size:1.6rem;font-weight:700;font-variant-numeric:tabular-nums;margin:6px 0 0}
-.meta{color:var(--mute);font-size:.82rem}
-.flag{color:var(--watch);font-size:.82rem;font-weight:600;margin-top:4px}
-svg.spark{width:100%;height:64px;display:block;margin-top:8px}
-.tw{overflow-x:auto;background:var(--card);border:1px solid var(--line);border-radius:12px}
-table{border-collapse:collapse;width:100%;font-size:.85rem;font-variant-numeric:tabular-nums}
-th,td{padding:8px 10px;text-align:right;border-bottom:1px solid var(--line);white-space:nowrap}
-th:first-child,td:first-child{text-align:left}
-th{color:var(--mute);font-weight:600}
-tr.combo td{background:color-mix(in srgb,var(--card) 92%,var(--spark))}
-.note{background:var(--card);border-left:3px solid var(--watch);padding:10px 12px;border-radius:6px;font-size:.88rem;margin-top:12px}
-ul.src{padding-left:18px;font-size:.85rem;color:var(--mute)}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+main{max-width:720px;margin:0 auto;padding:18px 16px 48px}
+h1{font-size:1rem;margin:0;color:var(--mute);font-weight:600}
+h2{font-size:1.1rem;margin:30px 0 10px}
+.meta{color:var(--mute);font-size:.85rem}
+.verdict{margin-top:10px;border-radius:16px;padding:18px;border:2px solid var(--c);background:var(--cbg)}
+.verdict .kicker{font-size:.8rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--c)}
+.verdict .big{font-size:2.3rem;font-weight:800;line-height:1.1;margin:2px 0 6px;color:var(--c)}
+.verdict .plain{font-size:1.1rem;font-weight:600;margin:0 0 10px}
+.verdict .record{margin:0 0 6px}
+.verdict .next{margin:10px 0 0;font-size:.92rem;color:var(--mute)}
+.stepper{display:flex;gap:4px;margin-top:14px}
+.stepper div{flex:1;text-align:center;font-size:.78rem;font-weight:700;padding:7px 2px;border-radius:8px;background:var(--card);color:var(--mute);border:1px solid var(--line)}
+.stepper div.done{background:var(--c);color:var(--card);border-color:var(--c)}
+.rows{background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.row{display:flex;align-items:center;gap:12px;padding:12px 14px;border-bottom:1px solid var(--line)}
+.row:last-child{border-bottom:0}
+.row .txt{flex:1;min-width:0}
+.row .nm{font-weight:650}
+.row .sub{font-size:.82rem;color:var(--mute)}
+.row .now{font-size:.9rem;margin-top:2px}
+.chip{font-size:.75rem;font-weight:800;padding:4px 9px;border-radius:999px;white-space:nowrap;letter-spacing:.02em}
+.chip.on{background:var(--s3bg);color:var(--s3);border:1px solid var(--s3)}
+.chip.off{background:var(--s0bg);color:var(--s0);border:1px solid var(--s0)}
+.chip.watch{background:var(--s1bg);color:var(--s1);border:1px solid var(--s1)}
+.tabs{display:flex;gap:6px;flex-wrap:wrap;margin:12px 0 8px}
+.tabs button{font:inherit;font-size:.88rem;padding:7px 14px;border-radius:999px;border:1px solid var(--line);background:var(--card);color:var(--ink);cursor:pointer}
+.tabs button[aria-selected="true"]{border-color:var(--spark);color:var(--spark);font-weight:700}
+svg.tl{width:100%;height:auto;display:block;background:var(--card);border:1px solid var(--line);border-radius:14px}
+.tw{overflow-x:auto;background:var(--card);border:1px solid var(--line);border-radius:14px}
+table{border-collapse:collapse;width:100%;font-size:.88rem;font-variant-numeric:tabular-nums}
+th,td{padding:9px 12px;text-align:left;border-bottom:1px solid var(--line)}
+tr:last-child td{border-bottom:0}
+th{color:var(--mute);font-weight:600;font-size:.8rem}
+td.n,th.n{text-align:right}
+.res-recession{color:var(--s2);font-weight:650}.res-no_recession{color:var(--s0);font-weight:650}.res-open,.res-repeat,.res-during_recession{color:var(--mute)}
+details{background:var(--card);border:1px solid var(--line);border-radius:14px;margin-top:10px}
+details>summary{cursor:pointer;padding:13px 14px;font-weight:650;list-style:none}
+details>summary::after{content:"＋";float:right;color:var(--mute)}
+details[open]>summary::after{content:"－"}
+details .in{padding:0 14px 14px}
+.chart{margin-top:14px}
+.chart .nm{font-weight:650;font-size:.92rem}
+svg.spark{width:100%;height:60px;display:block;margin-top:4px}
+.note{border-left:3px solid var(--s1);padding:8px 12px;font-size:.88rem;margin-top:12px;background:var(--bg);border-radius:6px}
+ul.src{padding-left:18px;font-size:.85rem;color:var(--mute);margin:0}
 footer{margin-top:28px;font-size:.8rem;color:var(--mute)}
-a{color:var(--spark)}
-.ladder{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px}
-.step{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:10px;font-size:.82rem}
-.step b{display:block;font-size:.95rem}
-.step.on{border-color:var(--lit);background:var(--lit-bg)}
-.step.on b{color:var(--lit)}
-.tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
-.tabs button{font:inherit;font-size:.85rem;padding:6px 12px;border-radius:999px;border:1px solid var(--line);background:var(--card);color:var(--ink);cursor:pointer}
-.tabs button[aria-selected="true"]{border-color:var(--spark);color:var(--spark);font-weight:600}
-.res-recession{color:var(--lit);font-weight:600}.res-no_recession{color:var(--ok);font-weight:600}.res-open,.res-repeat,.res-during_recession{color:var(--mute)}
-svg.tl{width:100%;height:auto;display:block;background:var(--card);border:1px solid var(--line);border-radius:12px}
 </style>
 </head>
 <body>
 <main>
 <h1>Recession Signal Tracker</h1>
-<p class="sub" id="gen">Loading…</p>
-<div class="hero"><span class="big" id="stage">–</span><span class="lbl" id="stagelbl"></span></div>
-<div class="ladder" id="ladder"></div>
-<p class="meta" id="countline"></p>
-<h2>Every past occurrence</h2>
+<div class="meta" id="gen">Loading…</div>
+
+<section class="verdict" id="verdict" aria-live="polite"></section>
+
+<h2>What we're watching</h2>
+<div class="rows" id="rows"></div>
+
+<h2>Every past time this happened</h2>
 <div id="tl"></div>
 <div class="tabs" role="tablist" id="tabs"></div>
 <p class="meta" id="tabsum"></p>
 <div class="tw"><table id="eps"></table></div>
-<h2>Signals</h2>
-<div class="grid" id="prongs"></div>
-<h2>Watch</h2>
-<div class="grid" id="watch"></div>
-<h2>Backtest vs NBER recessions</h2>
-<div class="tw"><table id="bt"></table></div>
-<p class="meta" id="btnote"></p>
-<div class="note"><strong>Caveat:</strong> only the Sahm rule series (SAHMREALTIME) is real-time. Every other input is today's revised data, and thresholds were chosen with hindsight, so these backtest results flatter what a forecaster would have seen at the time. The Sahm rule is a coincident signal: it usually lights a few months after a recession starts, so the "lit before the start" rule scores it harshly. Shaded bands are NBER recessions.</div>
-<h2>Data as of</h2>
-<ul class="src" id="src"></ul>
+
+<h2>More detail</h2>
+<details id="charts"><summary>History charts (last 10 years)</summary><div class="in" id="chartsin"></div></details>
+<details><summary>How each signal scored before past recessions</summary><div class="in">
+  <div class="tw"><table id="bt"></table></div>
+  <p class="meta" id="btnote"></p>
+  <div class="note"><strong>Caveat:</strong> except for the Sahm rule series, these use today's revised data with thresholds picked in hindsight, so they look better than they would have in real time. Only 4 recessions since 1982 have data for all signals.</div>
+</div></details>
+<details><summary>Data sources and dates</summary><div class="in"><ul class="src" id="src"></ul></div></details>
+
 <footer>Data: Federal Reserve Economic Data (FRED), Federal Reserve Bank of St. Louis; Board of Governors of the Federal Reserve System (excess bond premium, SLOOS, Treasury yields); Federal Reserve Banks of Philadelphia, New York and Dallas; U.S. Census Bureau (building permits); NBER recession dates via FRED. Not investment advice. Rebuilt nightly.</footer>
 </main>
 <script>
 const esc=v=>String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"})[c]);
 const fmt=(v,d=2)=>v==null?"–":(+v).toFixed(d);
-const thrText=t=>t?`${t.op} ${t.value}`:"";
-function spark(c,recs){
-  const s=c.series.filter(p=>p[1]!=null);if(!s.length)return"";
-  const W=300,H=64,ms=s.map(p=>p[0]),idx=new Map(ms.map((m,i)=>[m,i]));
-  const vs=s.map(p=>p[1]);let lo=Math.min(...vs),hi=Math.max(...vs);
-  const tv=c.threshold?c.threshold.value:(c.components_cfg?c.components_cfg[0].value:null);
-  if(tv!=null){lo=Math.min(lo,tv);hi=Math.max(hi,tv)}
-  const x=i=>i/(s.length-1||1)*W,y=v=>H-2-(v-lo)/((hi-lo)||1)*(H-4);
-  let shade="";let run=null;
-  recs.forEach(([m,r])=>{const i=idx.get(m);if(i==null)return;if(r&&run==null)run=i;if(!r&&run!=null){shade+=`<rect x="${x(run)}" y="0" width="${Math.max(1,x(i)-x(run))}" height="${H}" fill="var(--rec)"/>`;run=null}});
-  if(run!=null)shade+=`<rect x="${x(run)}" y="0" width="${W-x(run)}" height="${H}" fill="var(--rec)"/>`;
-  const d=s.map((p,i)=>`${i?"L":"M"}${x(i).toFixed(1)},${y(p[1]).toFixed(1)}`).join("");
-  const th=tv!=null?`<line x1="0" x2="${W}" y1="${y(tv)}" y2="${y(tv)}" stroke="var(--thr)" stroke-dasharray="3 3" stroke-width="1"/>`:"";
-  return `<svg class="spark" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" role="img" aria-label="${c.label} history ${s[0][0]} to ${ms[ms.length-1]}">${shade}${th}<path d="${d}" fill="none" stroke="var(--spark)" stroke-width="1.3" vector-effect="non-scaling-stroke"/></svg><div class="meta">${s[0][0].slice(0,4)}–${ms[ms.length-1].slice(0,4)} · dashed = threshold</div>`;
+const MON=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+const nice=m=>m?`${MON[+m.slice(5,7)-1]} ${m.slice(0,4)}`:"–";
+const mi=m=>(+m.slice(0,4))*12+(+m.slice(5,7))-1;
+const madd=(m,k)=>{const n=mi(m)+k;return `${Math.floor(n/12)}-${String(n%12+1).padStart(2,"0")}`};
+const STAGE_VARS={none:["--s0","--s0bg"],warning:["--s1","--s1bg"],arriving:["--s2","--s2bg"],confirmed:["--s3","--s3bg"]};
+
+function verdict(d){
+  const S=d.stages,cur=S.current,el=document.getElementById("verdict");
+  const [c,bg]=STAGE_VARS[cur||"none"];el.style.setProperty("--c",`var(${c})`);el.style.setProperty("--cbg",`var(${bg})`);
+  const steps=S.order.map((k,i)=>`<div class="${S.order.indexOf(cur)>=i?"done":""}">${i+1}. ${esc(S.stages[k].label)}</div>`).join("");
+  if(!cur){el.innerHTML=`<div class="kicker">Current stage</div><div class="big">All clear</div><p class="plain">No recession warning signs are on.</p><div class="stepper">${steps}</div>`;return}
+  const s=S.stages[cur],ep=s.episodes.at(-1),past=s.episodes.filter(e=>e!==ep&&e.result!=="repeat");
+  const hits=past.filter(e=>e.result==="recession"),leads=hits.map(e=>e.lead_months).filter(x=>x>=0);
+  const since=ep.ongoing?`On since ${nice(ep.start)} (${ep.months} months).`:"";
+  let rec=past.length?`Since ${s.first_month.slice(0,4)}, <strong>${hits.length} of ${past.length}</strong> earlier ${esc(s.label.toLowerCase())}s were followed by a recession`+(leads.length?`, ${Math.min(...leads)}–${Math.max(...leads)} months after they began.`:"."):"";
+  let extra="";
+  if(ep.ongoing&&leads.length&&ep.months>Math.max(...leads))extra=` <strong>This one has lasted ${ep.months} months with no recession, longer than any earlier lead.</strong>`;
+  let expiry="";
+  if(cur==="warning"){const yc=d.signals.yield_curve.series.filter(p=>p[1]!=null&&p[1]<0).at(-1);if(yc)expiry=` The curve last inverted in ${nice(yc[0])}; this stage ends ${nice(madd(yc[0],24))} unless it inverts again.`}
+  el.innerHTML=`<div class="kicker">Current stage</div><div class="big">${esc(s.label)}</div><p class="plain">${esc(s.plain)}</p>
+   <p class="record">${since} ${rec}${extra}</p><div class="stepper">${steps}</div><p class="next">${esc(s.next_text)}${expiry}</p>`;
 }
-function card(c,recs){
-  let val=`${fmt(c.value)} <span class="meta">${esc(c.units)}</span>`,rule=`lit when ${thrText(c.threshold)}`;
-  if(c.component_values){
-    val=c.components_cfg.map(k=>`${esc(k.label)}: <strong>${fmt(c.component_values[k.source].value)}</strong> <span class="meta">(${k.op} ${k.value}, ${c.component_values[k.source].month})</span>`).join("<br>");
-    rule=`lit when ${c.combine==="all"?"all":"any"} component crosses`;
-  }
-  const flag=c.uninverted_after_inversion?`<div class="flag">⚠ Un-inverted after an inversion in the past 24 months</div>`:"";
-  return `<div class="card ${c.lit?"lit":""}"><div class="top"><span class="name">${esc(c.label)}</span><span class="pill ${c.lit?"on":"off"}">${c.lit?"LIT":"not lit"}</span></div>
-  <div class="val" style="${c.component_values?"font-size:.95rem;font-weight:400":""}">${val}</div>
-  <div class="meta">${rule} for ≥${c.persistence_months} mo · condition met ${c.months_persisted} mo running · ${esc(c.as_of_month)}</div>${flag}${spark(c,recs)}</div>`;
+
+function rows(d){
+  const S=Object.values(d.signals),yc=d.signals.yield_curve;
+  const lastInv=yc?yc.series.filter(p=>p[1]!=null&&p[1]<0).at(-1):null;
+  document.getElementById("rows").innerHTML=S.map(c=>{
+    let now;
+    if(c.component_values)now=c.components_cfg.map(k=>`${esc(k.label)} ${fmt(c.component_values[k.source].value)}`).join(" · ");
+    else now=`Now ${fmt(c.value,c.units==="%"?1:2)}${c.units==="%"?"%":""}`;
+    let chip=c.lit?`<span class="chip on">FLASHING</span>`:`<span class="chip off">CLEAR</span>`;
+    let note="";
+    if(c.id==="yield_curve"&&!c.lit&&c.uninverted_after_inversion&&lastInv){chip=`<span class="chip watch">RECENTLY INVERTED</span>`;note=` · last inverted ${nice(lastInv[0])}`}
+    return `<div class="row"><div class="txt"><div class="nm">${esc(c.short_label)}${c.role==="watch"?' <span class="meta">(extra)</span>':""}</div>
+      <div class="sub">${esc(c.plain)}</div><div class="now">${now} <span class="meta">· flashes when ${esc(c.trigger_text)}${note}</span></div></div>${chip}</div>`}).join("");
 }
-function renderStages(d){
-  const S=d.stages;if(!S)return;
-  const cur=S.current?S.stages[S.current].label:"No stage";
-  document.getElementById("stage").textContent=cur;
-  const ce=S.current&&S.stages[S.current].episodes.at(-1);
-  document.getElementById("stagelbl").textContent=ce&&ce.ongoing?`since ${ce.start} · ${ce.months} months`:(S.current?"":"no stage on");
-  document.getElementById("ladder").innerHTML=S.order.map(k=>{const s=S.stages[k];return `<div class="step ${s.on?"on":""}"><b>${esc(s.label)}</b>${s.on?"ON":"off"} · ${esc(s.as_of_month)}<br><span class="meta">${esc(s.blurb)}</span></div>`}).join("");
-  document.getElementById("countline").textContent=`Prongs lit: ${d.prongs_lit_now} of ${d.prongs.length}.`;
-  // timeline: one row per stage, bars per episode, NBER shading
-  const recs=d.recessions_all||[],start=S.order.map(k=>S.stages[k].first_month).sort()[0],end=d.recessions.at(-1)[0];
-  const mi=m=>(+m.slice(0,4))*12+(+m.slice(5,7))-1,a=mi(start),b=mi(end),W=360,L=62,rowH=24,H=S.order.length*rowH+20;
-  const x=m=>L+(mi(m)-a)/(b-a)*(W-L-6);
+
+function timeline(d){
+  const S=d.stages,recs=d.recessions_all||d.recessions,start=S.order.map(k=>S.stages[k].first_month).sort()[0],end=d.recessions.at(-1)[0];
+  const a=mi(start),b=mi(end),W=360,L=64,rowH=26,H=S.order.length*rowH+22,x=m=>L+(mi(m)-a)/(b-a)*(W-L-8);
   let g="",run=null;
   recs.forEach(([m,r])=>{if(m<start)return;if(r&&!run)run=m;if(!r&&run){g+=`<rect x="${x(run)}" y="2" width="${Math.max(1.5,x(m)-x(run))}" height="${H-20}" fill="var(--rec)"/>`;run=null}});
-  S.order.forEach((k,i)=>{const s=S.stages[k],y=4+i*rowH;g+=`<text x="4" y="${y+14}" font-size="10" fill="var(--mute)">${esc(s.label)}</text>`;
-    s.episodes.forEach(e=>{g+=`<rect x="${x(e.start)}" y="${y+3}" width="${Math.max(2,x(e.end)-x(e.start)+1)}" height="${rowH-8}" rx="2" fill="${e.result==="no_recession"?"var(--ok)":"var(--lit)"}" opacity=".85"><title>${esc(s.label)} ${esc(e.start)}–${esc(e.end)}</title></rect>`})});
-  for(let y=Math.ceil((+start.slice(0,4))/10)*10;y<=+end.slice(0,4);y+=10)g+=`<text x="${x(y+"-01")}" y="${H-4}" font-size="10" fill="var(--mute)" text-anchor="middle">${y}</text>`;
-  document.getElementById("tl").innerHTML=`<svg class="tl" viewBox="0 0 ${W} ${H}" role="img" aria-label="Timeline of every stage episode with NBER recessions shaded">${g}</svg><p class="meta">Orange = followed by a recession, green = no recession followed. Grey bands = NBER recessions.</p>`;
-  const OUT={recession:e=>e.lead_months>=0?`Recession began ${e.recession_start}, ${e.lead_months} mo later`:`Recession began ${e.recession_start}, ${-e.lead_months} mo earlier`,
-    no_recession:()=>"No recession followed",open:()=>"Too soon to tell",during_recession:()=>"Started during a recession",repeat:e=>`Same recession as above (${e.recession_start})`};
-  const show=k=>{const s=S.stages[k];
-    document.querySelectorAll("#tabs button").forEach(b=>b.setAttribute("aria-selected",b.dataset.k===k));
-    const sm=s.summary;document.getElementById("tabsum").textContent=`${s.label}: ${s.episodes.length} episodes since ${s.first_month.slice(0,4)}. ${sm.recession} followed by a recession, ${sm.no_recession} not${sm.open?`, ${sm.open} too soon to tell`:""}.`;
-    document.getElementById("eps").innerHTML=`<thead><tr><th>Start</th><th>End</th><th>Months</th><th>Outcome</th></tr></thead><tbody>${s.episodes.slice().reverse().map(e=>`<tr><td>${esc(e.start)}</td><td>${e.ongoing?"ongoing":esc(e.end)}</td><td>${e.months}</td><td class="res-${esc(e.result)}" style="text-align:left;white-space:normal;min-width:9em">${esc(OUT[e.result](e))}</td></tr>`).join("")}</tbody>`;};
+  S.order.forEach((k,i)=>{const s=S.stages[k],y=4+i*rowH;g+=`<text x="4" y="${y+15}" font-size="10.5" fill="var(--mute)">${esc(s.label)}</text>`;
+    s.episodes.forEach(e=>{g+=`<rect x="${x(e.start)}" y="${y+4}" width="${Math.max(2.5,x(e.end)-x(e.start)+1)}" height="${rowH-10}" rx="2" fill="${e.result==="no_recession"?"var(--s0)":e.result==="open"?"var(--thr)":"var(--s2)"}"><title>${esc(s.label)} ${esc(e.start)} to ${esc(e.end)}</title></rect>`})});
+  g+=`<line x1="${x(end)}" x2="${x(end)}" y1="0" y2="${H-18}" stroke="var(--ink)" stroke-width="1" stroke-dasharray="2 2"/><text x="${x(end)-2}" y="${H-4}" font-size="9.5" fill="var(--ink)" text-anchor="end">now</text>`;
+  for(let y=Math.ceil((+start.slice(0,4))/10)*10;y<=+end.slice(0,4)-7;y+=10)g+=`<text x="${x(y+"-01")}" y="${H-4}" font-size="9.5" fill="var(--mute)" text-anchor="middle">${y}</text>`;
+  document.getElementById("tl").innerHTML=`<svg class="tl" viewBox="0 0 ${W} ${H}" role="img" aria-label="Timeline of every stage episode, NBER recessions shaded">${g}</svg>
+   <p class="meta"><span style="color:var(--s2)">■</span> recession followed &nbsp; <span style="color:var(--s0)">■</span> no recession &nbsp; <span style="opacity:.6">▮</span> grey = actual recessions</p>`;
+  const OUT={recession:e=>e.lead_months>=0?`Recession ${e.lead_months} mo later (${nice(e.recession_start)})`:`Recession had begun ${-e.lead_months} mo earlier (${nice(e.recession_start)})`,
+    no_recession:()=>"No recession",open:()=>"Too soon to tell",during_recession:()=>"Started during a recession",repeat:e=>`Same recession (${nice(e.recession_start)})`};
+  const show=k=>{const s=S.stages[k],sm=s.summary;
+    document.querySelectorAll("#tabs button").forEach(bt=>bt.setAttribute("aria-selected",bt.dataset.k===k));
+    document.getElementById("tabsum").innerHTML=`<strong>${esc(s.label)}</strong>: ${esc(s.blurb)} ${s.episodes.length} times since ${s.first_month.slice(0,4)}; ${sm.recession} followed by a recession, ${sm.no_recession} not.`;
+    document.getElementById("eps").innerHTML=`<thead><tr><th>When</th><th class="n">Months</th><th>What followed</th></tr></thead><tbody>${s.episodes.slice().reverse().map(e=>`<tr><td>${nice(e.start)} – ${e.ongoing?"now":nice(e.end)}</td><td class="n">${e.months}</td><td class="res-${esc(e.result)}">${esc(OUT[e.result](e))}</td></tr>`).join("")}</tbody>`};
   document.getElementById("tabs").innerHTML=S.order.map(k=>`<button role="tab" data-k="${esc(k)}">${esc(S.stages[k].label)}</button>`).join("");
-  document.querySelectorAll("#tabs button").forEach(b=>b.onclick=()=>show(b.dataset.k));
-  show(S.order[0]);
+  document.querySelectorAll("#tabs button").forEach(bt=>bt.onclick=()=>show(bt.dataset.k));
+  show(S.current||S.order[0]);
 }
+
+function spark(c,recs,from){
+  const s=c.series.filter(p=>p[1]!=null&&p[0]>=from);if(s.length<2)return"";
+  const W=300,H=60,ms=s.map(p=>p[0]),idx=new Map(ms.map((m,i)=>[m,i])),vs=s.map(p=>p[1]);
+  let lo=Math.min(...vs),hi=Math.max(...vs);const tv=c.threshold?c.threshold.value:(c.components_cfg?c.components_cfg[0].value:null);
+  if(tv!=null){lo=Math.min(lo,tv);hi=Math.max(hi,tv)}
+  const x=i=>i/(s.length-1)*W,y=v=>H-3-(v-lo)/((hi-lo)||1)*(H-6);
+  let sh="",run=null;recs.forEach(([m,r])=>{const i=idx.get(m);if(i==null)return;if(r&&run==null)run=i;if(!r&&run!=null){sh+=`<rect x="${x(run)}" y="0" width="${Math.max(1,x(i)-x(run))}" height="${H}" fill="var(--rec)"/>`;run=null}});
+  const p=s.map((q,i)=>`${i?"L":"M"}${x(i).toFixed(1)},${y(q[1]).toFixed(1)}`).join("");
+  const th=tv!=null?`<line x1="0" x2="${W}" y1="${y(tv)}" y2="${y(tv)}" stroke="var(--thr)" stroke-dasharray="3 3"/>`:"";
+  return `<div class="chart"><div class="nm">${esc(c.short_label)} <span class="meta">${nice(ms[0])} – ${nice(ms.at(-1))}, dashed = trigger</span></div><svg class="spark" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" role="img" aria-label="${esc(c.short_label)} history">${sh}${th}<path d="${p}" fill="none" stroke="var(--spark)" stroke-width="1.5" vector-effect="non-scaling-stroke"/><circle cx="${x(s.length-1)}" cy="${y(vs.at(-1))}" r="2.5" fill="var(--spark)"/></svg></div>`;
+}
+
 function render(d){
-  renderStages(d);
-  document.getElementById("gen").textContent=`Built ${d.generated_at.replace("T"," ").slice(0,16)} UTC from FRED and Federal Reserve data`;
-  const S=Object.values(d.signals);
-  document.getElementById("prongs").innerHTML=S.filter(c=>c.role==="prong").map(c=>card(c,d.recessions)).join("");
-  document.getElementById("watch").innerHTML=S.filter(c=>c.role==="watch").map(c=>card(c,d.recessions)).join("");
-  const rows=d.backtest.map(r=>`<tr class="${r.role==="combo"?"combo":""}"><td>${esc(r.label)}</td><td>${r.hits}</td><td>${r.false_positives}</td><td>${r.misses}</td><td>${r.median_lead_months??"–"}</td><td>${r.scored_recessions.length?r.scored_recessions[0].slice(0,4)+"–":"–"}</td></tr>`).join("");
-  document.getElementById("bt").innerHTML=`<thead><tr><th>Signal</th><th>Hits</th><th>False +</th><th>Misses</th><th>Median lead (mo)</th><th>Scored from</th></tr></thead><tbody>${rows}</tbody>`;
-  document.getElementById("btnote").textContent=`Hit = signal lit at some point in the ${d.backtest_window_months} months before a recession start. Lead = months from the first lit month in that window to the start. False positive = a new lit episode with no recession start within ${d.backtest_window_months} months. Each signal is scored only on recessions its own history covers; "≥N prongs" uses months where all four prongs have data.`;
-  document.getElementById("src").innerHTML=Object.entries(d.sources).map(([k,v])=>`<li><strong>${esc(k)}</strong> — latest ${esc(v.last_observation)} (from ${esc(v.first_observation)}) · ${esc(v.attribution)}</li>`).join("");
+  document.getElementById("gen").textContent=`Updated ${+d.generated_at.slice(8,10)} ${nice(d.generated_at.slice(0,7))} · FRED and Federal Reserve data`;
+  verdict(d);rows(d);timeline(d);
+  const last=d.recessions.at(-1)[0],from=madd(last,-120);
+  document.getElementById("chartsin").innerHTML=Object.values(d.signals).map(c=>spark(c,d.recessions,from)).join("");
+  document.getElementById("bt").innerHTML=`<thead><tr><th>Signal</th><th class="n">Caught</th><th class="n">False alarms</th><th class="n">Missed</th><th class="n">Median lead</th></tr></thead><tbody>${d.backtest.map(r=>`<tr><td>${esc(r.label)}</td><td class="n">${r.hits}</td><td class="n">${r.false_positives}</td><td class="n">${r.misses}</td><td class="n">${r.median_lead_months??"–"}</td></tr>`).join("")}</tbody>`;
+  document.getElementById("btnote").textContent=`Caught = the signal flashed at some point in the ${d.backtest_window_months} months before a recession began. Lead is in months. A false alarm is a new flash with no recession within ${d.backtest_window_months} months. The Sahm rule usually flashes after a recession starts, so this test counts it as missing them.`;
+  document.getElementById("src").innerHTML=Object.entries(d.sources).map(([k,v])=>`<li><strong>${esc(k)}</strong>: latest ${esc(v.last_observation)} (from ${esc(v.first_observation)}) · ${esc(v.attribution)}</li>`).join("");
 }
 if(window.RF_DATA)render(window.RF_DATA);
 else fetch("data/signals.json").then(r=>r.json()).then(render).catch(e=>{document.getElementById("gen").textContent="Could not load data: "+e});

@@ -71,7 +71,7 @@ def build_stages(cfg, signals, usrec):
                 seen.add(o["recession_start"])
             eps.append({"start": a, "end": b, "months": _diff(a, b) + 1, "ongoing": b == max(f), **o})
         last = max(f) if f else None
-        out["stages"][sid] = {"label": d["label"], "blurb": d["blurb"], "on": bool(last and f[last]), "as_of_month": last,
+        out["stages"][sid] = {"label": d["label"], "blurb": d["blurb"], "plain": d.get("plain", ""), "next_text": d.get("next_text", ""), "on": bool(last and f[last]), "as_of_month": last,
                               "first_month": min(f) if f else None, "episodes": eps,
                               "summary": {k: sum(e["result"] == k for e in eps) for k in ("recession", "no_recession", "open", "during_recession", "repeat")}}
     on = [s for s in st["order"] if out["stages"][s]["on"]]
