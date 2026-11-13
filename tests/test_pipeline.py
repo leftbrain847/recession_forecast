@@ -121,3 +121,39 @@ def test_build_end_to_end_from_fixtures(monkeypatch):
     assert data["sources"]["EBP"]["last_observation"]
     for c in data["signals"].values():
         assert {"lit", "value", "months_persisted", "series"} <= set(c)
+
+
+def _sig(lit):
+    return {"lit": lit}
+
+
+def test_stage_flags_warning_lookback_and_arriving_needs_warning():
+    from pipeline.stages import stage_flags
+    ms = months(2000, 40)
+    yc = {m: m == "2000-06" for m in ms}                 # one inverted month
+    man = {m: m in ("2002-05", "2002-07") for m in ms}  # inside then outside the 24-mo window
+    sigs = {"yield_curve": _sig(yc), "manufacturing": _sig(man), "credit": _sig({m: False for m in ms}),
+            "unemployment": _sig({m: False for m in ms})}
+    f = stage_flags(CFG, sigs)
+    assert f["warning"]["2002-06"] and not f["warning"]["2002-07"]
+    assert f["arriving"]["2002-05"] and not f["arriving"]["2002-07"]
+
+
+def test_episodes_merge_gap_and_outcomes():
+    from pipeline.stages import episodes, outcome
+    flag = {m: m in ("2000-01", "2000-02", "2000-05", "2001-01") for m in months(2000, 24)}
+    assert episodes(flag, 3) == [["2000-01", "2000-05"], ["2001-01", "2001-01"]]
+    usrec = {m: int("2001-06" <= m <= "2001-11") for m in months(1999, 120)}
+    assert outcome("2000-01", usrec, 0, 18) == {"result": "recession", "recession_start": "2001-06", "lead_months": 17}
+    assert outcome("2001-09", usrec, 12, 12)["lead_months"] == -3
+    assert outcome("2004-01", usrec, 0, 18) == {"result": "no_recession"}
+    assert outcome("2008-01", usrec, 0, 18) == {"result": "open"}
+
+
+def test_build_includes_stage_history(monkeypatch):
+    monkeypatch.setenv("RF_RAW_DIR", str(ROOT / "tests/fixtures"))
+    from pipeline.fetch import fetch_all
+    st = build.build(CFG, fetch_all(CFG))["stages"]
+    assert st["order"] == ["warning", "arriving", "confirmed"]
+    w = st["stages"]["warning"]["episodes"]
+    assert any(e["result"] == "recession" and e["recession_start"] == "2008-01" for e in w)

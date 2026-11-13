@@ -7,6 +7,7 @@ import sys
 from pipeline import backtest
 from pipeline.fetch import fetch_all
 from pipeline.signals import compute_all, prongs_lit
+from pipeline.stages import build_stages
 
 
 def r2(v):
@@ -43,7 +44,9 @@ def build(cfg, raw, now=None):
         "prongs_lit_now": sum(out_signals[p]["lit"] for p in prong_ids),
         "signals": out_signals,
         "recessions": [[m, int(v)] for m, v in usrec.items() if m >= start],
+        "recessions_all": [[m, int(v)] for m, v in usrec.items() if m >= cfg["output"].get("timeline_start", start)],
         "backtest": backtest.run(signals, counts, usrec, cfg),
+        "stages": build_stages(cfg, signals, usrec) if "stages" in cfg else None,
         "backtest_window_months": cfg["backtest"]["window_months"],
         "sources": {sid: {"last_observation": raw[sid][-1][0], "first_observation": raw[sid][0][0],
                           "attribution": cfg["sources"][sid]["attribution"]} for sid in raw},

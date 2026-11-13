@@ -3,6 +3,9 @@
 Four-prong recession signal tracker with an NBER backtest. A nightly GitHub Action pulls FRED and Federal Reserve data,
 computes the signals, commits `docs/data/signals.json`, and deploys the static page in `docs/` to GitHub Pages.
 
+Stages (headline): warning = yield curve inverted within 24 months; arriving = warning plus manufacturing or credit lit;
+confirmed = Sahm rule lit. The page lists every past episode of each stage and what followed.
+
 Prongs: yield curve (T10Y3M), Sahm rule (SAHMREALTIME), regional Fed manufacturing (Philly/NY/Dallas), credit
 (excess bond premium or SLOOS DRTSCILM). Watch: building permits YoY. Every threshold, window and source lives in
 `config/signals.json`. No ISM or Moody's data (license).
