@@ -87,7 +87,10 @@
       },
       "persistence_months": 1,
       "uninverted_lookback_months": 24,
-      "units": "pp"
+      "units": "pp",
+      "short_label": "Yield curve",
+      "plain": "Inverted when 10-year rates fall below 3-month rates",
+      "trigger_text": "below 0"
     },
     "unemployment": {
       "label": "Sahm rule (real-time)",
@@ -102,7 +105,10 @@
         "value": 0.5
       },
       "persistence_months": 1,
-      "units": "pp"
+      "units": "pp",
+      "short_label": "Unemployment (Sahm rule)",
+      "plain": "Jobless rate up 0.5 pt from its 12-month low",
+      "trigger_text": "at or above 0.5"
     },
     "manufacturing": {
       "label": "Regional Fed manufacturing",
@@ -121,7 +127,10 @@
         "value": 0
       },
       "persistence_months": 6,
-      "units": "index, 3-mo avg"
+      "units": "index, 3-mo avg",
+      "short_label": "Factories (regional Fed surveys)",
+      "plain": "Below 0 means more factories shrinking than growing, for 6+ months",
+      "trigger_text": "below 0 for 6+ months"
     },
     "credit": {
       "label": "Credit (EBP or bank tightening)",
@@ -149,7 +158,10 @@
         }
       ],
       "persistence_months": 1,
-      "units": "pp"
+      "units": "pp",
+      "short_label": "Credit stress",
+      "plain": "Bond investors demanding extra risk pay, or banks tightening loans",
+      "trigger_text": "bond premium above 0.5 or banks tightening at or above 25%"
     },
     "housing": {
       "label": "Building permits YoY",
@@ -164,7 +176,10 @@
         "value": -20
       },
       "persistence_months": 1,
-      "units": "%"
+      "units": "%",
+      "short_label": "Building permits",
+      "plain": "New permits vs a year earlier",
+      "trigger_text": "down 20% or more"
     }
   },
   "backtest": {
@@ -201,7 +216,9 @@
           }
         ],
         "match_before_months": 0,
-        "match_after_months": 24
+        "match_after_months": 24,
+        "plain": "Recession risk is elevated: the yield curve has inverted.",
+        "next_text": "Moves to Arriving if factories or credit start flashing."
       },
       "arriving": {
         "label": "Arriving",
@@ -220,7 +237,9 @@
           }
         ],
         "match_before_months": 0,
-        "match_after_months": 18
+        "match_after_months": 18,
+        "plain": "A recession may be close: the yield curve warned and factories or credit are now flashing.",
+        "next_text": "Moves to Confirmed if the Sahm rule triggers."
       },
       "confirmed": {
         "label": "Confirmed",
@@ -231,7 +250,9 @@
           }
         ],
         "match_before_months": 12,
-        "match_after_months": 12
+        "match_after_months": 12,
+        "plain": "A recession has likely begun: unemployment is rising fast.",
+        "next_text": ""
       }
     }
   }
