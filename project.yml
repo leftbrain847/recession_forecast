@@ -1,7 +1,7 @@
 # Read nightly by leftbrain847/index. /new-project fills this in; edit any time.
 theme: ""             # one of the index's config.themes
-tags: []              # from the index's config.tags; new tags lowercase_with_underscores
-what: ""              # one line on what this is
-next: ""              # the next step
+tags: [economics, data_pipeline]              # from the index's config.tags; new tags lowercase_with_underscores
+what: "Nightly recession-signal tracker (yield curve, Sahm, regional manufacturing, credit) with NBER backtest"              # one line on what this is
+next: "Confirm first nightly Action run and Pages deploy; add real-time vintages (ALFRED) to de-flatter the backtest"              # the next step
 active: false         # true pulls this repo's tasks into J's queue
 public: false         # informational; each sprint day's snapshot decides publishing

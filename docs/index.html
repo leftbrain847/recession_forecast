@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Recession Signal Tracker</title>
+<meta name="description" content="Four-prong recession signal tracker with an NBER backtest, rebuilt nightly from FRED and Federal Reserve data.">
+<style>
+:root{--bg:#f7f7f5;--card:#fff;--ink:#1b1d21;--mute:#5d636e;--line:#e3e3df;--lit:#c2410c;--lit-bg:#fff1e8;--ok:#15803d;--ok-bg:#ecfdf3;--watch:#a16207;--spark:#2f5d9a;--rec:rgba(120,120,120,.18);--thr:#9aa0a8}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#121316;--card:#1b1d22;--ink:#ecedef;--mute:#9aa1ac;--line:#2c2f36;--lit:#fb923c;--lit-bg:#2b1a10;--ok:#4ade80;--ok-bg:#10241a;--watch:#facc15;--spark:#7fa8e0;--rec:rgba(200,200,200,.12);--thr:#5d636e}}
+:root[data-theme="dark"]{--bg:#121316;--card:#1b1d22;--ink:#ecedef;--mute:#9aa1ac;--line:#2c2f36;--lit:#fb923c;--lit-bg:#2b1a10;--ok:#4ade80;--ok-bg:#10241a;--watch:#facc15;--spark:#7fa8e0;--rec:rgba(200,200,200,.12);--thr:#5d636e}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+main{max-width:960px;margin:0 auto;padding:20px 16px 48px}
+h1{font-size:1.4rem;margin:0 0 2px}
+h2{font-size:1.05rem;margin:28px 0 10px}
+.sub{color:var(--mute);margin:0 0 16px;font-size:.9rem}
+.hero{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px;display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}
+.hero .big{font-size:2.4rem;font-weight:700;font-variant-numeric:tabular-nums}
+.hero .lbl{color:var(--mute)}
+.grid{display:grid;gap:12px;grid-template-columns:1fr}
+@media(min-width:640px){.grid{grid-template-columns:1fr 1fr}}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px}
+.card.lit{border-color:var(--lit);background:var(--lit-bg)}
+.top{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.name{font-weight:600}
+.pill{font-size:.75rem;font-weight:700;padding:2px 8px;border-radius:999px;white-space:nowrap}
+.pill.on{color:var(--lit);border:1px solid var(--lit)}
+.pill.off{color:var(--ok);border:1px solid var(--ok)}
+.role{font-size:.72rem;color:var(--mute);text-transform:uppercase;letter-spacing:.04em}
+.val{font-size:1.6rem;font-weight:700;font-variant-numeric:tabular-nums;margin:6px 0 0}
+.meta{color:var(--mute);font-size:.82rem}
+.flag{color:var(--watch);font-size:.82rem;font-weight:600;margin-top:4px}
+svg.spark{width:100%;height:64px;display:block;margin-top:8px}
+.tw{overflow-x:auto;background:var(--card);border:1px solid var(--line);border-radius:12px}
+table{border-collapse:collapse;width:100%;font-size:.85rem;font-variant-numeric:tabular-nums}
+th,td{padding:8px 10px;text-align:right;border-bottom:1px solid var(--line);white-space:nowrap}
+th:first-child,td:first-child{text-align:left}
+th{color:var(--mute);font-weight:600}
+tr.combo td{background:color-mix(in srgb,var(--card) 92%,var(--spark))}
+.note{background:var(--card);border-left:3px solid var(--watch);padding:10px 12px;border-radius:6px;font-size:.88rem;margin-top:12px}
+ul.src{padding-left:18px;font-size:.85rem;color:var(--mute)}
+footer{margin-top:28px;font-size:.8rem;color:var(--mute)}
+a{color:var(--spark)}
+</style>
+</head>
+<body>
+<main>
+<h1>Recession Signal Tracker</h1>
+<p class="sub" id="gen">Loading…</p>
+<div class="hero"><span class="big" id="count">–</span><span class="lbl" id="countlbl">prongs lit</span></div>
+<h2>Prongs</h2>
+<div class="grid" id="prongs"></div>
+<h2>Watch</h2>
+<div class="grid" id="watch"></div>
+<h2>Backtest vs NBER recessions</h2>
+<div class="tw"><table id="bt"></table></div>
+<p class="meta" id="btnote"></p>
+<div class="note"><strong>Caveat:</strong> only the Sahm rule series (SAHMREALTIME) is real-time. Every other input is today's revised data, and thresholds were chosen with hindsight, so these backtest results flatter what a forecaster would have seen at the time. The Sahm rule is a coincident signal: it usually lights a few months after a recession starts, so the "lit before the start" rule scores it harshly. Shaded bands are NBER recessions.</div>
+<h2>Data as of</h2>
+<ul class="src" id="src"></ul>
+<footer>Data: Federal Reserve Economic Data (FRED), Federal Reserve Bank of St. Louis; Board of Governors of the Federal Reserve System (excess bond premium, SLOOS, Treasury yields); Federal Reserve Banks of Philadelphia, New York and Dallas; U.S. Census Bureau (building permits); NBER recession dates via FRED. Not investment advice. Rebuilt nightly.</footer>
+</main>
+<script>
+const fmt=(v,d=2)=>v==null?"–":(+v).toFixed(d);
+const thrText=t=>t?`${t.op} ${t.value}`:"";
+function spark(c,recs){
+  const s=c.series.filter(p=>p[1]!=null);if(!s.length)return"";
+  const W=300,H=64,ms=s.map(p=>p[0]),idx=new Map(ms.map((m,i)=>[m,i]));
+  const vs=s.map(p=>p[1]);let lo=Math.min(...vs),hi=Math.max(...vs);
+  const tv=c.threshold?c.threshold.value:(c.components_cfg?c.components_cfg[0].value:null);
+  if(tv!=null){lo=Math.min(lo,tv);hi=Math.max(hi,tv)}
+  const x=i=>i/(s.length-1||1)*W,y=v=>H-2-(v-lo)/((hi-lo)||1)*(H-4);
+  let shade="";let run=null;
+  recs.forEach(([m,r])=>{const i=idx.get(m);if(i==null)return;if(r&&run==null)run=i;if(!r&&run!=null){shade+=`<rect x="${x(run)}" y="0" width="${Math.max(1,x(i)-x(run))}" height="${H}" fill="var(--rec)"/>`;run=null}});
+  if(run!=null)shade+=`<rect x="${x(run)}" y="0" width="${W-x(run)}" height="${H}" fill="var(--rec)"/>`;
+  const d=s.map((p,i)=>`${i?"L":"M"}${x(i).toFixed(1)},${y(p[1]).toFixed(1)}`).join("");
+  const th=tv!=null?`<line x1="0" x2="${W}" y1="${y(tv)}" y2="${y(tv)}" stroke="var(--thr)" stroke-dasharray="3 3" stroke-width="1"/>`:"";
+  return `<svg class="spark" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" role="img" aria-label="${c.label} history ${s[0][0]} to ${ms[ms.length-1]}">${shade}${th}<path d="${d}" fill="none" stroke="var(--spark)" stroke-width="1.3" vector-effect="non-scaling-stroke"/></svg><div class="meta">${s[0][0].slice(0,4)}–${ms[ms.length-1].slice(0,4)} · dashed = threshold</div>`;
+}
+function card(c,recs){
+  let val=`${fmt(c.value)} <span class="meta">${c.units}</span>`,rule=`lit when ${thrText(c.threshold)}`;
+  if(c.component_values){
+    val=c.components_cfg.map(k=>`${k.label}: <strong>${fmt(c.component_values[k.source].value)}</strong> <span class="meta">(${k.op} ${k.value}, ${c.component_values[k.source].month})</span>`).join("<br>");
+    rule=`lit when ${c.combine==="all"?"all":"any"} component crosses`;
+  }
+  const flag=c.uninverted_after_inversion?`<div class="flag">⚠ Un-inverted after an inversion in the past 24 months</div>`:"";
+  return `<div class="card ${c.lit?"lit":""}"><div class="top"><span class="name">${c.label}</span><span class="pill ${c.lit?"on":"off"}">${c.lit?"LIT":"not lit"}</span></div>
+  <div class="val" style="${c.component_values?"font-size:.95rem;font-weight:400":""}">${val}</div>
+  <div class="meta">${rule} for ≥${c.persistence_months} mo · condition met ${c.months_persisted} mo running · ${c.as_of_month}</div>${flag}${spark(c,recs)}</div>`;
+}
+function render(d){
+  document.getElementById("gen").textContent=`Built ${d.generated_at.replace("T"," ").slice(0,16)} UTC from FRED and Federal Reserve data`;
+  document.getElementById("count").textContent=`${d.prongs_lit_now} / ${d.prongs.length}`;
+  const S=Object.values(d.signals);
+  document.getElementById("prongs").innerHTML=S.filter(c=>c.role==="prong").map(c=>card(c,d.recessions)).join("");
+  document.getElementById("watch").innerHTML=S.filter(c=>c.role==="watch").map(c=>card(c,d.recessions)).join("");
+  const rows=d.backtest.map(r=>`<tr class="${r.role==="combo"?"combo":""}"><td>${r.label}</td><td>${r.hits}</td><td>${r.false_positives}</td><td>${r.misses}</td><td>${r.median_lead_months??"–"}</td><td>${r.scored_recessions.length?r.scored_recessions[0].slice(0,4)+"–":"–"}</td></tr>`).join("");
+  document.getElementById("bt").innerHTML=`<thead><tr><th>Signal</th><th>Hits</th><th>False +</th><th>Misses</th><th>Median lead (mo)</th><th>Scored from</th></tr></thead><tbody>${rows}</tbody>`;
+  document.getElementById("btnote").textContent=`Hit = signal lit at any point in the ${d.backtest_window_months} months up to a recession start. Lead = months from first lit month in that window to the start. False positive = a new lit episode with no recession start within ${d.backtest_window_months} months. Each signal is scored only on recessions its own history covers; "≥N prongs" uses months where all four prongs have data.`;
+  document.getElementById("src").innerHTML=Object.entries(d.sources).map(([k,v])=>`<li><strong>${k}</strong> — latest ${v.last_observation} (from ${v.first_observation}) · ${v.attribution}</li>`).join("");
+}
+if(window.RF_DATA)render(window.RF_DATA);
+else fetch("data/signals.json").then(r=>r.json()).then(render).catch(e=>{document.getElementById("gen").textContent="Could not load data: "+e});
+</script>
+</body>
+</html>
