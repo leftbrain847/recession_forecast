@@ -1,7 +1,7 @@
 # Read nightly by leftbrain847/index. /new-project fills this in; edit any time.
-theme: ""             # one of the index's config.themes
-tags: [economics, data_pipeline]              # from the index's config.tags; new tags lowercase_with_underscores
+theme: data          # one of the index's config.themes
+tags: [pipeline, visualization, python]              # from the index's config.tags; new tags lowercase_with_underscores
 what: "Nightly recession-signal tracker (yield curve, Sahm, regional manufacturing, credit) with NBER backtest"              # one line on what this is
 next: "Scoring overhaul (base rate, precision, merge flicker); confirm first nightly Action run once FRED_API_KEY is set"
 active: false         # true pulls this repo's tasks into J's queue
-public: false         # informational; each sprint day's snapshot decides publishing
+public: true          # informational; each sprint day's snapshot decides publishing
