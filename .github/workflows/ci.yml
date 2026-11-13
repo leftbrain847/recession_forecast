@@ -1,0 +1,22 @@
+# Runs whatever tests the repo has, from a clean checkout. Add a runner below if you use another stack.
+name: ci
+on: [push, pull_request]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+      - name: Node tests
+        if: hashFiles('package.json') != ''
+        run: npm ci || npm install; npm test --if-present
+      - name: Plain JS tests
+        if: hashFiles('package.json') == '' && hashFiles('**/*.test.js', '**/*.test.mjs') != ''
+        run: node --test
+      - name: Python tests
+        if: hashFiles('tests/**/*.py', 'pyproject.toml', 'requirements*.txt') != ''
+        run: |
+          pip install -q pytest
+          [ -f requirements.txt ] && pip install -q -r requirements.txt || true
+          [ -f pyproject.toml ] && pip install -q -e . || true
+          pytest -q

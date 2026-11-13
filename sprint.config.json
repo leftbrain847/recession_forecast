@@ -1,0 +1,6 @@
+{
+  "$comment": "Sprint settings for this repo. scripts/snapshot.mjs reads these. Snapshots always go in snapshots/ (the folder the index scans).",
+  "project": "PROJECT_NAME",
+  "timeZone": "America/New_York",
+  "public": false
+}

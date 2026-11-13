@@ -1,0 +1,7 @@
+# Read nightly by leftbrain847/index. /new-project fills this in; edit any time.
+theme: ""             # one of the index's config.themes
+tags: []              # from the index's config.tags; new tags lowercase_with_underscores
+what: ""              # one line on what this is
+next: ""              # the next step
+active: false         # true pulls this repo's tasks into J's queue
+public: false         # informational; each sprint day's snapshot decides publishing
