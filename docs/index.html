@@ -42,14 +42,31 @@ tr.combo td{background:color-mix(in srgb,var(--card) 92%,var(--spark))}
 ul.src{padding-left:18px;font-size:.85rem;color:var(--mute)}
 footer{margin-top:28px;font-size:.8rem;color:var(--mute)}
 a{color:var(--spark)}
+.ladder{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px}
+.step{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:10px;font-size:.82rem}
+.step b{display:block;font-size:.95rem}
+.step.on{border-color:var(--lit);background:var(--lit-bg)}
+.step.on b{color:var(--lit)}
+.tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
+.tabs button{font:inherit;font-size:.85rem;padding:6px 12px;border-radius:999px;border:1px solid var(--line);background:var(--card);color:var(--ink);cursor:pointer}
+.tabs button[aria-selected="true"]{border-color:var(--spark);color:var(--spark);font-weight:600}
+.res-recession{color:var(--lit);font-weight:600}.res-no_recession{color:var(--ok);font-weight:600}.res-open,.res-repeat,.res-during_recession{color:var(--mute)}
+svg.tl{width:100%;height:auto;display:block;background:var(--card);border:1px solid var(--line);border-radius:12px}
 </style>
 </head>
 <body>
 <main>
 <h1>Recession Signal Tracker</h1>
 <p class="sub" id="gen">Loading…</p>
-<div class="hero"><span class="big" id="count">–</span><span class="lbl" id="countlbl">prongs lit</span></div>
-<h2>Prongs</h2>
+<div class="hero"><span class="big" id="stage">–</span><span class="lbl" id="stagelbl"></span></div>
+<div class="ladder" id="ladder"></div>
+<p class="meta" id="countline"></p>
+<h2>Every past occurrence</h2>
+<div id="tl"></div>
+<div class="tabs" role="tablist" id="tabs"></div>
+<p class="meta" id="tabsum"></p>
+<div class="tw"><table id="eps"></table></div>
+<h2>Signals</h2>
 <div class="grid" id="prongs"></div>
 <h2>Watch</h2>
 <div class="grid" id="watch"></div>
@@ -90,9 +107,37 @@ function card(c,recs){
   <div class="val" style="${c.component_values?"font-size:.95rem;font-weight:400":""}">${val}</div>
   <div class="meta">${rule} for ≥${c.persistence_months} mo · condition met ${c.months_persisted} mo running · ${esc(c.as_of_month)}</div>${flag}${spark(c,recs)}</div>`;
 }
+function renderStages(d){
+  const S=d.stages;if(!S)return;
+  const cur=S.current?S.stages[S.current].label:"No stage";
+  document.getElementById("stage").textContent=cur;
+  const ce=S.current&&S.stages[S.current].episodes.at(-1);
+  document.getElementById("stagelbl").textContent=ce&&ce.ongoing?`since ${ce.start} · ${ce.months} months`:(S.current?"":"no stage on");
+  document.getElementById("ladder").innerHTML=S.order.map(k=>{const s=S.stages[k];return `<div class="step ${s.on?"on":""}"><b>${esc(s.label)}</b>${s.on?"ON":"off"} · ${esc(s.as_of_month)}<br><span class="meta">${esc(s.blurb)}</span></div>`}).join("");
+  document.getElementById("countline").textContent=`Prongs lit: ${d.prongs_lit_now} of ${d.prongs.length}.`;
+  // timeline: one row per stage, bars per episode, NBER shading
+  const recs=d.recessions_all||[],start=S.order.map(k=>S.stages[k].first_month).sort()[0],end=d.recessions.at(-1)[0];
+  const mi=m=>(+m.slice(0,4))*12+(+m.slice(5,7))-1,a=mi(start),b=mi(end),W=360,L=62,rowH=24,H=S.order.length*rowH+20;
+  const x=m=>L+(mi(m)-a)/(b-a)*(W-L-6);
+  let g="",run=null;
+  recs.forEach(([m,r])=>{if(m<start)return;if(r&&!run)run=m;if(!r&&run){g+=`<rect x="${x(run)}" y="2" width="${Math.max(1.5,x(m)-x(run))}" height="${H-20}" fill="var(--rec)"/>`;run=null}});
+  S.order.forEach((k,i)=>{const s=S.stages[k],y=4+i*rowH;g+=`<text x="4" y="${y+14}" font-size="10" fill="var(--mute)">${esc(s.label)}</text>`;
+    s.episodes.forEach(e=>{g+=`<rect x="${x(e.start)}" y="${y+3}" width="${Math.max(2,x(e.end)-x(e.start)+1)}" height="${rowH-8}" rx="2" fill="${e.result==="no_recession"?"var(--ok)":"var(--lit)"}" opacity=".85"><title>${esc(s.label)} ${esc(e.start)}–${esc(e.end)}</title></rect>`})});
+  for(let y=Math.ceil((+start.slice(0,4))/10)*10;y<=+end.slice(0,4);y+=10)g+=`<text x="${x(y+"-01")}" y="${H-4}" font-size="10" fill="var(--mute)" text-anchor="middle">${y}</text>`;
+  document.getElementById("tl").innerHTML=`<svg class="tl" viewBox="0 0 ${W} ${H}" role="img" aria-label="Timeline of every stage episode with NBER recessions shaded">${g}</svg><p class="meta">Orange = followed by a recession, green = no recession followed. Grey bands = NBER recessions.</p>`;
+  const OUT={recession:e=>e.lead_months>=0?`Recession began ${e.recession_start}, ${e.lead_months} mo later`:`Recession began ${e.recession_start}, ${-e.lead_months} mo earlier`,
+    no_recession:()=>"No recession followed",open:()=>"Too soon to tell",during_recession:()=>"Started during a recession",repeat:e=>`Same recession as above (${e.recession_start})`};
+  const show=k=>{const s=S.stages[k];
+    document.querySelectorAll("#tabs button").forEach(b=>b.setAttribute("aria-selected",b.dataset.k===k));
+    const sm=s.summary;document.getElementById("tabsum").textContent=`${s.label}: ${s.episodes.length} episodes since ${s.first_month.slice(0,4)}. ${sm.recession} followed by a recession, ${sm.no_recession} not${sm.open?`, ${sm.open} too soon to tell`:""}.`;
+    document.getElementById("eps").innerHTML=`<thead><tr><th>Start</th><th>End</th><th>Months</th><th>Outcome</th></tr></thead><tbody>${s.episodes.slice().reverse().map(e=>`<tr><td>${esc(e.start)}</td><td>${e.ongoing?"ongoing":esc(e.end)}</td><td>${e.months}</td><td class="res-${esc(e.result)}" style="text-align:left;white-space:normal;min-width:9em">${esc(OUT[e.result](e))}</td></tr>`).join("")}</tbody>`;};
+  document.getElementById("tabs").innerHTML=S.order.map(k=>`<button role="tab" data-k="${esc(k)}">${esc(S.stages[k].label)}</button>`).join("");
+  document.querySelectorAll("#tabs button").forEach(b=>b.onclick=()=>show(b.dataset.k));
+  show(S.order[0]);
+}
 function render(d){
+  renderStages(d);
   document.getElementById("gen").textContent=`Built ${d.generated_at.replace("T"," ").slice(0,16)} UTC from FRED and Federal Reserve data`;
-  document.getElementById("count").textContent=`${d.prongs_lit_now} / ${d.prongs.length}`;
   const S=Object.values(d.signals);
   document.getElementById("prongs").innerHTML=S.filter(c=>c.role==="prong").map(c=>card(c,d.recessions)).join("");
   document.getElementById("watch").innerHTML=S.filter(c=>c.role==="watch").map(c=>card(c,d.recessions)).join("");

@@ -1,16 +1,69 @@
 {
   "sources": {
-    "T10Y3M":             {"provider": "fred", "frequency": "daily",     "max_stale_days": 10,  "attribution": "FRED / Federal Reserve Board"},
-    "SAHMREALTIME":       {"provider": "fred", "frequency": "monthly",   "max_stale_days": 75,  "attribution": "FRED / Claudia Sahm"},
-    "USREC":              {"provider": "fred", "frequency": "monthly",   "max_stale_days": 75,  "attribution": "FRED / NBER"},
-    "GACDFSA066MSFRBPHI": {"provider": "fred", "frequency": "monthly",   "max_stale_days": 75,  "attribution": "FRED / Federal Reserve Bank of Philadelphia"},
-    "GACDISA066MSFRBNY":  {"provider": "fred", "frequency": "monthly",   "max_stale_days": 75,  "attribution": "FRED / Federal Reserve Bank of New York"},
-    "BACTSAMFRBDAL":      {"provider": "fred", "frequency": "monthly",   "max_stale_days": 75,  "attribution": "FRED / Federal Reserve Bank of Dallas"},
-    "DRTSCILM":           {"provider": "fred", "frequency": "quarterly", "max_stale_days": 200, "attribution": "FRED / Federal Reserve Board (SLOOS)", "start": "1990-01-01"},
-    "PERMIT":             {"provider": "fred", "frequency": "monthly",   "max_stale_days": 100, "attribution": "FRED / U.S. Census Bureau"},
-    "EBP":                {"provider": "csv", "url": "https://www.federalreserve.gov/econres/notes/feds-notes/ebp_csv.csv",
-                           "date_column": "date", "value_column": "ebp", "expected_columns": ["date", "gz_spread", "ebp", "est_prob"],
-                           "frequency": "monthly", "max_stale_days": 100, "attribution": "Federal Reserve Board (excess bond premium, Gilchrist-Zakrajšek)"}
+    "T10Y3M": {
+      "provider": "fred",
+      "frequency": "daily",
+      "max_stale_days": 10,
+      "attribution": "FRED / Federal Reserve Board"
+    },
+    "SAHMREALTIME": {
+      "provider": "fred",
+      "frequency": "monthly",
+      "max_stale_days": 75,
+      "attribution": "FRED / Claudia Sahm"
+    },
+    "USREC": {
+      "provider": "fred",
+      "frequency": "monthly",
+      "max_stale_days": 75,
+      "attribution": "FRED / NBER"
+    },
+    "GACDFSA066MSFRBPHI": {
+      "provider": "fred",
+      "frequency": "monthly",
+      "max_stale_days": 75,
+      "attribution": "FRED / Federal Reserve Bank of Philadelphia"
+    },
+    "GACDISA066MSFRBNY": {
+      "provider": "fred",
+      "frequency": "monthly",
+      "max_stale_days": 75,
+      "attribution": "FRED / Federal Reserve Bank of New York"
+    },
+    "BACTSAMFRBDAL": {
+      "provider": "fred",
+      "frequency": "monthly",
+      "max_stale_days": 75,
+      "attribution": "FRED / Federal Reserve Bank of Dallas"
+    },
+    "DRTSCILM": {
+      "provider": "fred",
+      "frequency": "quarterly",
+      "max_stale_days": 200,
+      "attribution": "FRED / Federal Reserve Board (SLOOS)",
+      "start": "1990-01-01"
+    },
+    "PERMIT": {
+      "provider": "fred",
+      "frequency": "monthly",
+      "max_stale_days": 100,
+      "attribution": "FRED / U.S. Census Bureau"
+    },
+    "EBP": {
+      "provider": "csv",
+      "url": "https://www.federalreserve.gov/econres/notes/feds-notes/ebp_csv.csv",
+      "date_column": "date",
+      "value_column": "ebp",
+      "expected_columns": [
+        "date",
+        "gz_spread",
+        "ebp",
+        "est_prob"
+      ],
+      "frequency": "monthly",
+      "max_stale_days": 100,
+      "attribution": "Federal Reserve Board (excess bond premium, Gilchrist-Zakrajšek)"
+    }
   },
   "fred": {
     "api_url": "https://api.stlouisfed.org/fred/series/observations",
@@ -21,37 +74,165 @@
   },
   "signals": {
     "yield_curve": {
-      "label": "Yield curve (10y - 3m)", "role": "prong", "enabled": true,
-      "sources": ["T10Y3M"], "transform": "monthly_mean",
-      "threshold": {"op": "<", "value": 0}, "persistence_months": 1,
-      "uninverted_lookback_months": 24, "units": "pp"
+      "label": "Yield curve (10y - 3m)",
+      "role": "prong",
+      "enabled": true,
+      "sources": [
+        "T10Y3M"
+      ],
+      "transform": "monthly_mean",
+      "threshold": {
+        "op": "<",
+        "value": 0
+      },
+      "persistence_months": 1,
+      "uninverted_lookback_months": 24,
+      "units": "pp"
     },
     "unemployment": {
-      "label": "Sahm rule (real-time)", "role": "prong", "enabled": true,
-      "sources": ["SAHMREALTIME"], "transform": "level",
-      "threshold": {"op": ">=", "value": 0.5}, "persistence_months": 1, "units": "pp"
+      "label": "Sahm rule (real-time)",
+      "role": "prong",
+      "enabled": true,
+      "sources": [
+        "SAHMREALTIME"
+      ],
+      "transform": "level",
+      "threshold": {
+        "op": ">=",
+        "value": 0.5
+      },
+      "persistence_months": 1,
+      "units": "pp"
     },
     "manufacturing": {
-      "label": "Regional Fed manufacturing", "role": "prong", "enabled": true,
-      "sources": ["GACDFSA066MSFRBPHI", "GACDISA066MSFRBNY", "BACTSAMFRBDAL"], "transform": "mean_available_then_ma",
-      "ma_months": 3, "philly_only_before": "2001-01",
-      "threshold": {"op": "<", "value": 0}, "persistence_months": 6, "units": "index, 3-mo avg"
+      "label": "Regional Fed manufacturing",
+      "role": "prong",
+      "enabled": true,
+      "sources": [
+        "GACDFSA066MSFRBPHI",
+        "GACDISA066MSFRBNY",
+        "BACTSAMFRBDAL"
+      ],
+      "transform": "mean_available_then_ma",
+      "ma_months": 3,
+      "philly_only_before": "2001-01",
+      "threshold": {
+        "op": "<",
+        "value": 0
+      },
+      "persistence_months": 6,
+      "units": "index, 3-mo avg"
     },
     "credit": {
-      "label": "Credit (EBP or bank tightening)", "role": "prong", "enabled": true,
-      "sources": ["EBP", "DRTSCILM"], "transform": "components", "combine": "any",
-      "components": [
-        {"source": "EBP", "label": "Excess bond premium", "op": ">", "value": 0.5},
-        {"source": "DRTSCILM", "label": "Banks tightening C&I (net %)", "op": ">=", "value": 25, "forward_fill_months": 3}
+      "label": "Credit (EBP or bank tightening)",
+      "role": "prong",
+      "enabled": true,
+      "sources": [
+        "EBP",
+        "DRTSCILM"
       ],
-      "persistence_months": 1, "units": "pp"
+      "transform": "components",
+      "combine": "any",
+      "components": [
+        {
+          "source": "EBP",
+          "label": "Excess bond premium",
+          "op": ">",
+          "value": 0.5
+        },
+        {
+          "source": "DRTSCILM",
+          "label": "Banks tightening C&I (net %)",
+          "op": ">=",
+          "value": 25,
+          "forward_fill_months": 3
+        }
+      ],
+      "persistence_months": 1,
+      "units": "pp"
     },
     "housing": {
-      "label": "Building permits YoY", "role": "watch", "enabled": true,
-      "sources": ["PERMIT"], "transform": "yoy_pct",
-      "threshold": {"op": "<=", "value": -20}, "persistence_months": 1, "units": "%"
+      "label": "Building permits YoY",
+      "role": "watch",
+      "enabled": true,
+      "sources": [
+        "PERMIT"
+      ],
+      "transform": "yoy_pct",
+      "threshold": {
+        "op": "<=",
+        "value": -20
+      },
+      "persistence_months": 1,
+      "units": "%"
     }
   },
-  "backtest": {"window_months": 18, "include_start_month": false, "recession_source": "USREC", "n_of_prongs": [1, 2, 3, 4]},
-  "output": {"path": "docs/data/signals.json", "chart_start": "1973-01"}
+  "backtest": {
+    "window_months": 18,
+    "include_start_month": false,
+    "recession_source": "USREC",
+    "n_of_prongs": [
+      1,
+      2,
+      3,
+      4
+    ]
+  },
+  "output": {
+    "path": "docs/data/signals.json",
+    "chart_start": "1973-01",
+    "timeline_start": "1959-01"
+  },
+  "stages": {
+    "merge_gap_months": 3,
+    "order": [
+      "warning",
+      "arriving",
+      "confirmed"
+    ],
+    "definitions": {
+      "warning": {
+        "label": "Warning",
+        "blurb": "Yield curve inverted now or within the past 24 months.",
+        "all": [
+          {
+            "signal": "yield_curve",
+            "lit_within_months": 24
+          }
+        ],
+        "match_before_months": 0,
+        "match_after_months": 24
+      },
+      "arriving": {
+        "label": "Arriving",
+        "blurb": "Warning is on and manufacturing or credit is lit.",
+        "all": [
+          {
+            "stage": "warning"
+          }
+        ],
+        "any": [
+          {
+            "signal": "manufacturing"
+          },
+          {
+            "signal": "credit"
+          }
+        ],
+        "match_before_months": 0,
+        "match_after_months": 18
+      },
+      "confirmed": {
+        "label": "Confirmed",
+        "blurb": "Sahm rule lit (real-time unemployment).",
+        "all": [
+          {
+            "signal": "unemployment"
+          }
+        ],
+        "match_before_months": 12,
+        "match_after_months": 12
+      }
+    }
+  }
 }
